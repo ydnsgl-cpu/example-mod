@@ -1,100 +1,64 @@
-/**
- * Include the Geode headers.
- */
 #include <Geode/Geode.hpp>
+#include <Geode/modify/EditorUI.hpp>
+#include <Geode/binding/EditorUI.hpp>
+#include "AILevelLayer.hpp"
 
-/**
- * Brings cocos2d and all Geode namespaces to the current scope.
- */
 using namespace geode::prelude;
 
-/**
- * `$modify` lets you extend and modify GD's classes.
- * To hook a function in Geode, simply $modify the class
- * and write a new function definition with the signature of
- * the function you want to hook.
- *
- * Here we use the overloaded `$modify` macro to set our own class name,
- * so that we can use it for button callbacks.
- *
- * Notice the header being included, you *must* include the header for
- * the class you are modifying, or you will get a compile error.
- *
- * Another way you could do this is like this:
- *
- * struct MyMenuLayer : Modify<MyMenuLayer, MenuLayer> {};
- */
-#include <Geode/modify/MenuLayer.hpp>
-class $modify(MyMenuLayer, MenuLayer) {
-	/**
-	 * Typically classes in GD are initialized using the `init` function, (though not always!),
-	 * so here we use it to add our own button to the bottom menu.
-	 *
-	 * Note that for all hooks, your signature has to *match exactly*,
-	 * `void init()` would not place a hook!
-	*/
-	bool init() {
-		/**
-		 * We call the original init function so that the
-		 * original class is properly initialized.
-		 */
-		if (!MenuLayer::init()) {
-			return false;
-		}
+class $modify(AIEditorMod, EditorUI) {
+    struct Fields {
+        AILevelLayer* aiLayer = nullptr;
+        bool aiTabActive = false;
+    };
 
-		/**
-		 * You can use methods from the `geode::log` namespace to log messages to the console,
-		 * being useful for debugging and such. See this page for more info about logging:
-		 * https://docs.geode-sdk.org/tutorials/logging
-		*/
-		log::debug("Hello from my MenuLayer::init hook! This layer has {} children.", this->getChildrenCount());
+    bool init(LevelEditorLayer* editorLayer) {
+        if (!EditorUI::init(editorLayer)) return false;
 
-		/**
-		 * See this page for more info about buttons
-		 * https://docs.geode-sdk.org/tutorials/buttons
-		*/
-		auto myButton = CCMenuItemSpriteExtra::create(
-			CCSprite::createWithSpriteFrameName("GJ_likeBtn_001.png"),
-			this,
-			/**
-			 * Here we use the name we set earlier for our modify class.
-			*/
-			menu_selector(MyMenuLayer::onMyButton)
-		);
+        auto winSize = CCDirector::get()->getWinSize();
+        float panelW = 200.f;
+        float panelH = winSize.height - 80.f;
 
-		/**
-		 * Here we access the `bottom-menu` node by its ID, and add our button to it.
-		 * Node IDs are a Geode feature, see this page for more info about it:
-		 * https://docs.geode-sdk.org/tutorials/nodetree
-		*/
-		auto menu = this->getChildByID("bottom-menu");
-		menu->addChild(myButton);
+        auto aiLayer = AILevelLayer::create(this);
+        if (!aiLayer) return true;
 
-		/**
-		 * The `_spr` string literal operator just prefixes the string with
-		 * your mod id followed by a slash. This is good practice for setting your own node ids.
-		*/
-		myButton->setID("my-button"_spr);
+        aiLayer->setContentSize({panelW, panelH});
+        aiLayer->setPosition({winSize.width - panelW - 2, 40});
+        aiLayer->setZOrder(10);
+        aiLayer->setVisible(false);
+        this->addChild(aiLayer);
+        m_fields->aiLayer = aiLayer;
 
-		/**
-		 * We update the layout of the menu to ensure that our button is properly placed.
-		 * This is yet another Geode feature, see this page for more info about it:
-		 * https://docs.geode-sdk.org/tutorials/layouts
-		*/
-		menu->updateLayout();
+        addAITabButton();
+        return true;
+    }
 
-		/**
-		 * We return `true` to indicate that the class was properly initialized.
-		 */
-		return true;
-	}
+    void addAITabButton() {
+        auto winSize = CCDirector::get()->getWinSize();
+        auto menu = CCMenu::create();
+        menu->setPosition({winSize.width - 25, winSize.height - 25});
+        this->addChild(menu, 20);
 
-	/**
-	 * This is the callback function for the button we created earlier.
-	 * The signature for button callbacks must always be the same,
-	 * return type `void` and taking a `CCObject*`.
-	*/
-	void onMyButton(CCObject*) {
-		FLAlertLayer::create("Geode", "Hello from my custom mod!", "OK")->show();
-	}
+        auto onSpr  = ButtonSprite::create("AI", "bigFont.fnt", "GJ_button_02.png", 0.5f);
+        auto offSpr = ButtonSprite::create("AI", "bigFont.fnt", "GJ_button_01.png", 0.5f);
+        onSpr->setColor({80, 200, 255});
+
+        auto btn = CCMenuItemToggler::create(
+            offSpr, onSpr, this,
+            menu_selector(AIEditorMod::onAITabToggle));
+        btn->setPosition({0, 0});
+        menu->addChild(btn);
+    }
+
+    void onAITabToggle(CCObject*) {
+        m_fields->aiTabActive = !m_fields->aiTabActive;
+        bool show = m_fields->aiTabActive;
+
+        if (m_fields->aiLayer) m_fields->aiLayer->setVisible(show);
+        if (m_createButtonBar) m_createButtonBar->setVisible(!show);
+        if (m_editButtonBar)   m_editButtonBar->setVisible(!show);
+    }
 };
+
+$on_mod(Loaded) {
+    log::info("AI Level Generator loaded!");
+}
