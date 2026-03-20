@@ -1,17 +1,27 @@
 {
-	"geode": "$GEODE_VERSION",
-	"gd": {
-		"win": "2.2081",
-		"android": "2.2081",
-		"mac": "2.2081",
-		"ios": "2.2081"
-	},
-	"id": "$MOD_ID",
-	"name": "$MOD_NAME",
-	"version": "$MOD_VERSION",
-	"developer": "$MOD_DEVELOPER",
-	"description": "$MOD_DESCRIPTION",
-	"dependencies": {
-		"geode.node-ids": ">=v1.20.0"
-	}
+    "geode": "3.0.0",
+    "gd": {
+        "win": "2.206",
+        "android": "2.206",
+        "mac": "2.206"
+    },
+    "id": "ydnsgl-cpu.ai-level-gen",
+    "name": "AI Level Generator",
+    "version": "1.0.0",
+    "developer": "ydnsgl-cpu",
+    "description": "Adds an AI tab to the GD editor powered by Claude.",
+    "settings": {
+        "api-key": {
+            "type": "string",
+            "default": "",
+            "name": "Anthropic API Key",
+            "description": "Your Claude API key from console.anthropic.com"
+        },
+        "model": {
+            "type": "string",
+            "default": "claude-sonnet-4-6",
+            "name": "Claude Model"
+        }
+    },
+    "tags": ["editor", "ai", "utility"]
 }
